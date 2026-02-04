@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# OVS PMD alert rules. For Kubernetes/RHOSO, prepend a CRD header from README.md.
+# For standalone Prometheus, use this file directly via rule_files in prometheus.yml.
+#
+# Metrics: ovs_pmd_lost_upcalls, ovs_pmd_nonvol_context_switches (labels: numa, cpu)
+---
+groups:
+  - name: openstack-observability.ovs.pmd
+    rules:
+      - alert: OVSPMDLostUpcallsCritical
+        expr: |
+          increase(ovs_pmd_lost_upcalls[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OVS PMD lost upcalls (critical)"
+          description: |
+            PMD thread cpu {{ $labels.cpu }} (numa {{ $labels.numa }}) has lost upcalls
+            in the last 5 minutes. A lost upcall means the PMD dropped the upcall entirely:
+            no userspace handling, no flow install, no retry. This is real, unrecoverable
+            packet drop—not noise.
+
+      - alert: OVSPMDNonVoluntaryContextSwitchesHigh
+        expr: |
+          increase(ovs_pmd_nonvol_context_switches[5m]) > 200
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OVS PMD high non-voluntary context switches (critical)"
+          description: |
+            PMD thread cpu {{ $labels.cpu }} (numa {{ $labels.numa }}) has more than 200
+            non-voluntary context switches in the last 5 minutes. High context switching
+            indicates the PMD is being preempted; this can cause packet drops and degraded
+            datapath performance.

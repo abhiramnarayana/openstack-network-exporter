@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# OVS interface error/drop alert rules. For Kubernetes/RHOSO, prepend a CRD header from README.md.
+# For standalone Prometheus, use this file directly via rule_files in prometheus.yml.
+#
+# Metrics: ovs_interface_rx_dropped, ovs_interface_rx_errors, ovs_interface_tx_errors
+# Labels: bridge, port, interface, type
+---
+groups:
+  - name: openstack-observability.ovs.interface
+    rules:
+      - alert: OVSInterfaceRxDroppedWarning
+        expr: |
+          (
+            increase(ovs_interface_rx_dropped[5m]) > 100
+          )
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OVS interface Rx ring drops (warning)"
+          description: |
+            Interface {{ $labels.interface }} has more than 100 packets dropped in the last 5 minutes
+            because the Rx ring was full. Bridge: {{ $labels.bridge }}
+
+      - alert: OVSInterfaceRxErrorsCritical
+        expr: |
+          (
+            increase(ovs_interface_rx_errors[5m]) > 100
+          )
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OVS interface Rx errors (critical)"
+          description: |
+            Interface {{ $labels.interface }} has more than 100 invalid packets received in the last 5 minutes.
+            Bridge: {{ $labels.bridge }}
+
+      - alert: OVSInterfaceTxErrorsCritical
+        expr: |
+          (
+            increase(ovs_interface_tx_errors[5m]) > 100
+          )
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OVS interface Tx errors (critical)"
+          description: |
+            Interface {{ $labels.interface }} has more than 100 errors while transmitting packets in the last 5 minutes.
+            Bridge: {{ $labels.bridge }}
