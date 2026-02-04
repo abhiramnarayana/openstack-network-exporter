@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Alert when openstack-network-exporter scrape target is down.
+# Uses for: 5m so brief outages (e.g. node reboot) are ignored.
+# For Kubernetes/RHOSO, prepend a CRD header from README.md.
+# For standalone Prometheus, use this file directly via rule_files in prometheus.yml.
+---
+groups:
+  - name: openstack-observability.openstack-network-exporter.status
+    rules:
+      - alert: OpenStackNetworkExporterDownCritical
+        expr: |
+          up{job=~"scrapeConfig/openstack/telemetry-openstack-network-exporter(-tls)?"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenStack network exporter down (critical)"
+          description: |
+            The openstack-network-exporter scrape target has been down for more than 5 minutes.
+            OVS/OVN metrics are not being collected.
+            Instance: {{ $labels.instance }}
+            Job: {{ $labels.job }}
